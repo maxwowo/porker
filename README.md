@@ -62,15 +62,20 @@ npm run format
 
 ## Deploying
 
-The Pages project and the room worker must be deployed in order:
+The Pages project is connected to GitHub, so pushes to `main` automatically build and deploy `https://porkr.pages.dev`. Pushes to other branches create preview deployments.
+
+The `porker-rooms` worker is separate and is deployed by `.github/workflows/deploy-worker.yml` when `worker/` or `shared/` changes, or on demand from the Actions tab. The workflow requires a repository secret named `CLOUDFLARE_API_TOKEN` with **Account → Workers Scripts → Edit** permission for this account.
+
+To deploy manually instead:
 
 ```sh
 npx wrangler login
-npx wrangler pages project create porkr --production-branch main
 npm run deploy
 ```
 
-`npm run deploy` builds the app, deploys `porker-rooms` first, then deploys Pages. The production site is available at `https://porkr.pages.dev`.
+`npm run deploy` builds the app, deploys `porker-rooms` first, then deploys Pages. Use `npm run deploy:rooms` when only the worker changed. The production site is available at `https://porkr.pages.dev`.
+
+To recreate the Pages project, connect it to this repository in the Cloudflare dashboard with build command `npm run build` and output directory `dist`.
 
 The app relies on Cloudflare Pages' native SPA fallback: do **not** add a `public/404.html`, because its presence disables the automatic rewrite of deep links such as `/r/ABC123` to `index.html`.
 

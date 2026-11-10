@@ -1,0 +1,177 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --canvas: #fbf7f0;
+  --surface: #fffdf8;
+  --surface-raised: #ffffff;
+  --surface-muted: #f2eade;
+  --ink: #261b1a;
+  --ink-muted: #796a65;
+  --line: #e8ddcf;
+  --felt: #145d4b;
+  --felt-deep: #0b4035;
+  --on-felt: #f8f4e9;
+  --pink: #e86f88;
+  --pink-strong: #c43e5c;
+  --pink-soft: #fbe3e9;
+  --on-pink: #fff9f5;
+  --gold: #d39a2f;
+  --good: #43a77b;
+  --danger: #b93838;
+}
+
+.dark {
+  --canvas: #171312;
+  --surface: #211b1a;
+  --surface-raised: #2a2321;
+  --surface-muted: #332a27;
+  --ink: #faf2e7;
+  --ink-muted: #b9a9a1;
+  --line: #3d3330;
+  --felt: #0f493c;
+  --felt-deep: #092f28;
+  --on-felt: #f3eee4;
+  --pink: #f08aa0;
+  --pink-strong: #f492a7;
+  --pink-soft: #3b2329;
+  --on-pink: #2b141a;
+  --gold: #ecc05f;
+  --good: #62c79a;
+  --danger: #f48b8b;
+}
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-raised: var(--surface-raised);
+  --color-muted: var(--surface-muted);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-line: var(--line);
+  --color-felt: var(--felt);
+  --color-felt-deep: var(--felt-deep);
+  --color-on-felt: var(--on-felt);
+  --color-pink: var(--pink);
+  --color-pink-strong: var(--pink-strong);
+  --color-pink-soft: var(--pink-soft);
+  --color-on-pink: var(--on-pink);
+  --color-gold: var(--gold);
+  --color-good: var(--good);
+  --color-danger: var(--danger);
+  --color-card: #fff9ee;
+  --color-card-ink: #2b1c1a;
+  --radius-control: 0.75rem;
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk Variable", "Inter Variable", ui-sans-serif, sans-serif;
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    background-color: var(--canvas);
+  }
+
+  body {
+    min-width: 320px;
+    min-height: 100dvh;
+    margin: 0;
+    background-color: var(--canvas);
+    background-image: radial-gradient(
+      circle at 1px 1px,
+      color-mix(in srgb, var(--ink) 8%, transparent) 1px,
+      transparent 0
+    );
+    background-size: 22px 22px;
+    color: var(--ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  button:not(:disabled) {
+    cursor: pointer;
+  }
+
+  ::selection {
+    background: var(--pink-soft);
+    color: var(--ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--pink-strong);
+    outline-offset: 2px;
+  }
+}
+
+.poker-table {
+  background-color: var(--felt);
+  background-image:
+    radial-gradient(ellipse at 50% -10%, rgba(255, 255, 255, 0.14), transparent 56%),
+    radial-gradient(ellipse at 50% 125%, rgba(0, 0, 0, 0.3), transparent 62%);
+}
+
+.poker-table::after {
+  content: "";
+  position: absolute;
+  inset: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: calc(2rem - 9px);
+  pointer-events: none;
+}
+
+.felt-texture {
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.08) 1px, transparent 0),
+    repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 9px);
+  background-size:
+    12px 12px,
+    auto;
+}
+
+.card-back {
+  background-color: var(--felt-deep);
+  background-image: radial-gradient(circle at 30% 15%, rgba(255, 255, 255, 0.12), transparent 55%);
+}
+
+.card-back-pattern {
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    rgba(255, 255, 255, 0.38) 1px,
+    transparent 0
+  );
+  background-size: 7px 7px;
+}
+
+.card-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+
+.card-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.card-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.card-scroll::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: var(--line);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

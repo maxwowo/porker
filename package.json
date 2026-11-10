@@ -20,7 +20,7 @@
     "format": "prettier --write . --ignore-unknown",
     "format:check": "prettier --check . --ignore-unknown",
     "deploy:rooms": "wrangler deploy -c worker/wrangler.toml",
-    "deploy:web": "wrangler pages deploy dist --project-name porker-app --branch main",
+    "deploy:web": "wrangler pages deploy dist --project-name porkr --branch main",
     "deploy": "npm run build && npm run deploy:rooms && npm run deploy:web"
   },
   "dependencies": {

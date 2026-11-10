@@ -66,11 +66,11 @@ The Pages project and the room worker must be deployed in order:
 
 ```sh
 npx wrangler login
-npx wrangler pages project create porker-app --production-branch main
+npx wrangler pages project create porkr --production-branch main
 npm run deploy
 ```
 
-`npm run deploy` builds the app, deploys `porker-rooms` first, then deploys Pages. The production site is available at `https://porker-app.pages.dev`.
+`npm run deploy` builds the app, deploys `porker-rooms` first, then deploys Pages. The production site is available at `https://porkr.pages.dev`.
 
 The app relies on Cloudflare Pages' native SPA fallback: do **not** add a `public/404.html`, because its presence disables the automatic rewrite of deep links such as `/r/ABC123` to `index.html`.
 

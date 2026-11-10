@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { FormEvent } from "react";
+import type { SubmitEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { normalizeRoomCode, ROOM_CODE_LENGTH, sanitizeRoomCodeInput } from "../../../shared/codes";
 
@@ -8,7 +8,7 @@ export function JoinRoomForm() {
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     const normalized = normalizeRoomCode(code);
 

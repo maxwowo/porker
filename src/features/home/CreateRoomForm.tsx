@@ -1,6 +1,6 @@
 import { ArrowRight, LoaderCircle, Sparkles } from "lucide-react";
 import { useState } from "react";
-import type { FormEvent } from "react";
+import type { SubmitEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { DEFAULT_DECK_ID } from "../../../shared/decks";
 import type { DeckId } from "../../../shared/decks";
@@ -23,7 +23,7 @@ export function CreateRoomForm() {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     const normalizedName = normalizeDisplayName(name);
 

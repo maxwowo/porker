@@ -1,6 +1,6 @@
 import { EyeOff, ShieldCheck } from "lucide-react";
 import { useState } from "react";
-import type { FormEvent } from "react";
+import type { SubmitEvent } from "react";
 import { getDeck } from "../../../shared/decks";
 import {
   MAX_NAME_LENGTH,
@@ -25,7 +25,7 @@ export function JoinGate({ code, info, onJoin }: JoinGateProps) {
   const [error, setError] = useState<string | null>(null);
   const deck = getDeck(info.deckId);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     const normalized = normalizeDisplayName(name);
 

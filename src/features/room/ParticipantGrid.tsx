@@ -6,6 +6,8 @@ interface ParticipantGridProps {
 }
 
 export function ParticipantGrid({ snapshot }: ParticipantGridProps) {
+  const revealed = snapshot.phase === "revealed";
+
   return (
     <ul
       className="flex flex-wrap items-start justify-center gap-x-3 gap-y-5 px-1 sm:gap-x-5"
@@ -16,10 +18,9 @@ export function ParticipantGrid({ snapshot }: ParticipantGridProps) {
           <ParticipantTile
             participant={participant}
             deckId={snapshot.deck.id}
-            revealed={snapshot.phase === "revealed"}
+            revealed={revealed}
             isSelf={participant.id === snapshot.self.id}
-            selfVote={snapshot.self.vote}
-            revealDelay={snapshot.phase === "revealed" ? index * 40 : 0}
+            revealDelay={revealed ? index * 40 : 0}
           />
         </li>
       ))}

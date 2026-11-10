@@ -2,16 +2,18 @@ import { EyeOff, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import type { SubmitEvent } from "react";
 import { getDeck } from "../../../shared/decks";
+import type { RoomInfo } from "../../../shared/protocol";
 import {
   MAX_NAME_LENGTH,
   NAME_REQUIREMENT,
   normalizeDisplayName,
 } from "../../../shared/validation";
-import type { RoomInfo } from "../../../shared/protocol";
 import { Button } from "../../components/Button";
-import { Input } from "../../components/Input";
 import { PigMark } from "../../components/Logo";
 import { PigMascot } from "../../components/PigMascot";
+import { Pill } from "../../components/Pill";
+import { TextField } from "../../components/TextField";
+import { pluralize } from "../../lib/format";
 import { loadName } from "../../lib/identity";
 
 interface JoinGateProps {
@@ -37,17 +39,21 @@ export function JoinGate({ code, info, onJoin }: JoinGateProps) {
     onJoin(normalized);
   }
 
-  const people = info.participantCount === 1 ? "1 person" : `${info.participantCount} people`;
+  const facts = [
+    deck.name,
+    pluralize(info.participantCount, "person", "people"),
+    info.phase === "voting" ? `Round ${info.round}` : "Revealed",
+  ];
 
   return (
     <div className="mx-auto grid max-w-4xl items-stretch gap-4 py-6 lg:grid-cols-[0.9fr_1.1fr]">
-      <aside className="relative overflow-hidden rounded-[1.75rem] bg-felt p-6 text-on-felt shadow-[0_28px_60px_-38px_rgba(12,50,42,0.8)] sm:p-8">
+      <aside className="relative overflow-hidden rounded-panel bg-felt p-6 text-on-felt shadow-felt sm:p-8">
         <div aria-hidden="true" className="felt-texture absolute inset-0 opacity-40" />
         <div className="relative">
-          <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[0.7rem] font-medium uppercase tracking-[0.14em] text-on-felt/75">
+          <Pill tone="felt" size="sm" className="uppercase tracking-[0.14em]">
             <PigMark className="size-3.5" />
             Room {code}
-          </span>
+          </Pill>
           <h1 className="mt-5 font-display text-4xl font-bold leading-[1.02] tracking-[-0.04em]">
             Pull up
             <br />a chair.
@@ -56,23 +62,19 @@ export function JoinGate({ code, info, onJoin }: JoinGateProps) {
             The table is set. Pick a name and join the round.
           </p>
 
-          <div className="mt-5 flex flex-wrap gap-2 text-xs text-on-felt/70">
-            <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1">
-              {deck.name}
-            </span>
-            <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1">
-              {people}
-            </span>
-            <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1">
-              {info.phase === "voting" ? `Round ${info.round}` : "Revealed"}
-            </span>
+          <div className="mt-5 flex flex-wrap gap-2">
+            {facts.map((fact) => (
+              <Pill key={fact} tone="felt" size="sm">
+                {fact}
+              </Pill>
+            ))}
           </div>
 
           <PigMascot className="mt-8 w-44 sm:w-52" />
         </div>
       </aside>
 
-      <section className="flex flex-col justify-center rounded-[1.75rem] border border-line bg-surface p-6 shadow-[0_30px_70px_-48px_rgba(60,30,26,0.45)] sm:p-8">
+      <section className="flex flex-col justify-center rounded-panel border border-line bg-surface p-6 shadow-panel-lg sm:p-8">
         <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-pink-strong">
           <ShieldCheck className="size-4" />
           No account needed
@@ -85,11 +87,8 @@ export function JoinGate({ code, info, onJoin }: JoinGateProps) {
         </p>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-3">
-          <label htmlFor="join-name" className="text-xs font-medium text-ink-muted">
-            Display name
-          </label>
-          <Input
-            id="join-name"
+          <TextField
+            label="Display name"
             value={name}
             onChange={(event) => {
               setName(event.target.value);
@@ -100,13 +99,8 @@ export function JoinGate({ code, info, onJoin }: JoinGateProps) {
             maxLength={MAX_NAME_LENGTH}
             autoFocus
             required
-            aria-invalid={Boolean(error)}
+            error={error}
           />
-          {error && (
-            <p className="text-sm text-danger" role="alert">
-              {error}
-            </p>
-          )}
           <Button type="submit" size="lg" className="w-full">
             Join the table
           </Button>

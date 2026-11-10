@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/Button";
 import { Logo } from "../../components/Logo";
+import { Pill } from "../../components/Pill";
 import { StatusPill } from "../../components/StatusPill";
 import type { ConnectionStatus } from "../../components/StatusPill";
 import { ThemeToggle } from "../../components/ThemeToggle";
@@ -35,13 +36,14 @@ export function RoomHeader({ code, status, participantCount, onLeave }: RoomHead
       <Logo className="mr-auto" />
 
       <div className="order-3 flex w-full flex-wrap items-center gap-2 sm:order-1 sm:w-auto">
-        <button
-          type="button"
+        <Button
+          variant="secondary"
+          size="sm"
+          shape="pill"
           onClick={copyLink}
-          className="inline-flex h-10 items-center gap-2 rounded-full border border-line bg-surface px-3 text-xs font-semibold text-ink transition hover:bg-muted"
           aria-label="Copy room link"
         >
-          <span className="font-display tracking-[0.18em]">{code}</span>
+          <span className="font-display font-semibold tracking-[0.18em]">{code}</span>
           {copied ? (
             <Check className="size-3.5 text-good" strokeWidth={3} />
           ) : (
@@ -50,15 +52,15 @@ export function RoomHeader({ code, status, participantCount, onLeave }: RoomHead
           <span className="sr-only" aria-live="polite">
             {copied ? "Room link copied" : ""}
           </span>
-        </button>
+        </Button>
 
         {status && <StatusPill status={status} />}
 
-        <span className="inline-flex h-8 items-center gap-1.5 rounded-full border border-line bg-surface px-3 text-xs font-medium text-ink-muted">
+        <Pill>
           <Users className="size-3.5" />
           {participantCount}
           <span className="sr-only">people at the table</span>
-        </span>
+        </Pill>
       </div>
 
       <div className="order-2 flex items-center gap-1">

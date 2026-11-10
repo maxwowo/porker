@@ -1,7 +1,7 @@
 import { Check } from "lucide-react";
-import { voteLabel } from "../../../shared/room";
 import type { DeckId } from "../../../shared/decks";
 import type { PublicParticipant } from "../../../shared/protocol";
+import { voteLabel } from "../../../shared/room";
 import { Avatar } from "../../components/Avatar";
 import { PlayingCard } from "../../components/PlayingCard";
 import { cn } from "../../lib/cn";
@@ -11,7 +11,6 @@ interface ParticipantTileProps {
   deckId: DeckId;
   revealed: boolean;
   isSelf: boolean;
-  selfVote: string | null;
   revealDelay: number;
 }
 
@@ -20,16 +19,13 @@ export function ParticipantTile({
   deckId,
   revealed,
   isSelf,
-  selfVote,
   revealDelay,
 }: ParticipantTileProps) {
-  const vote = isSelf ? (selfVote ?? participant.vote) : participant.vote;
-  const hasVote = participant.hasVoted;
-  const showFace = hasVote && (revealed || isSelf);
-  const label = vote === null ? "" : voteLabel(deckId, vote);
-  const status = participantStatus(participant, revealed);
-  const showPickedBadge = hasVote && !revealed;
-  const cardFace = showFace ? "front" : hasVote ? "back" : "empty";
+  const cardVisible = participant.hasVoted && (revealed || isSelf);
+  const cardLabel = participant.vote === null ? "" : voteLabel(deckId, participant.vote);
+  const cardFace = cardVisible ? "front" : participant.hasVoted ? "back" : "empty";
+  const showPickedBadge = participant.hasVoted && !revealed;
+  const voteStatus = participantStatus(participant, revealed);
 
   return (
     <div
@@ -53,21 +49,23 @@ export function ParticipantTile({
       <div className="relative mt-4">
         <PlayingCard
           face={cardFace}
-          label={showFace ? label : ""}
+          label={cardVisible ? cardLabel : ""}
           size="sm"
           className={cn(
             isSelf && !revealed && "ring-2 ring-pink/80 ring-offset-2 ring-offset-felt",
             !isSelf && showPickedBadge && "ring-2 ring-gold/70 ring-offset-2 ring-offset-felt",
-            revealed && hasVote && "card-reveal",
+            revealed && participant.hasVoted && "card-reveal",
           )}
-          style={revealed && hasVote ? { animationDelay: `${revealDelay}ms` } : undefined}
+          style={
+            revealed && participant.hasVoted ? { animationDelay: `${revealDelay}ms` } : undefined
+          }
         />
 
         {showPickedBadge && (
           <span
             aria-hidden="true"
             className={cn(
-              "absolute -right-1.5 -top-1.5 grid size-5 place-items-center rounded-full shadow-[0_2px_7px_rgba(7,40,33,0.5)] ring-2 ring-felt",
+              "absolute -right-1.5 -top-1.5 grid size-5 place-items-center rounded-full shadow-badge ring-2 ring-felt",
               isSelf ? "bg-pink text-on-pink" : "bg-gold text-felt-deep",
             )}
           >
@@ -79,7 +77,7 @@ export function ParticipantTile({
       <div className="mt-2 flex max-w-full items-center gap-1">
         <span className="truncate text-xs font-medium text-on-felt">{participant.name}</span>
         {isSelf && (
-          <span className="shrink-0 rounded-full bg-white/10 px-1.5 py-0.5 text-[0.58rem] font-semibold uppercase tracking-wide text-on-felt/65">
+          <span className="shrink-0 rounded-full bg-white/10 px-1.5 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wide text-on-felt/65">
             you
           </span>
         )}
@@ -87,13 +85,13 @@ export function ParticipantTile({
       <span
         className={cn(
           "mt-1 inline-flex items-center gap-1.5 text-[0.65rem] font-medium",
-          status.text,
+          voteStatus.text,
         )}
       >
-        <span className={cn("size-1.5 rounded-full", status.dot)} />
-        {status.label}
+        <span className={cn("size-1.5 rounded-full", voteStatus.dot)} />
+        {voteStatus.label}
       </span>
-      {showFace && label && <span className="sr-only">Voted {label}</span>}
+      {cardVisible && cardLabel && <span className="sr-only">Voted {cardLabel}</span>}
     </div>
   );
 }

@@ -1,7 +1,11 @@
 import { CheckCircle2 } from "lucide-react";
-import { voteLabel } from "../../../shared/room";
 import { computeResults, voteDistribution } from "../../../shared/results";
 import type { RoomSnapshot } from "../../../shared/protocol";
+import { voteLabel } from "../../../shared/room";
+import { Pill } from "../../components/Pill";
+import { formatNumber } from "../../lib/format";
+
+const MIN_BAR_PERCENTAGE = 3;
 
 export function ResultsBar({ snapshot }: { snapshot: RoomSnapshot }) {
   const votes = snapshot.participants.flatMap((participant) =>
@@ -18,22 +22,23 @@ export function ResultsBar({ snapshot }: { snapshot: RoomSnapshot }) {
     );
   }
 
+  const metrics = [
+    results.average === null ? null : { label: "Average", value: formatNumber(results.average) },
+    results.median === null ? null : { label: "Median", value: formatNumber(results.median) },
+    { label: results.voteCount === 1 ? "Card" : "Cards", value: String(results.voteCount) },
+  ].flatMap((metric) => (metric ? [metric] : []));
+
   return (
     <div className="mx-auto w-full max-w-lg" aria-live="polite">
       <div className="flex flex-wrap items-end justify-center gap-x-6 gap-y-3">
-        {results.average !== null && (
-          <Metric label="Average" value={formatNumber(results.average)} />
-        )}
-        {results.median !== null && <Metric label="Median" value={formatNumber(results.median)} />}
-        <Metric
-          label={results.voteCount === 1 ? "Card" : "Cards"}
-          value={String(results.voteCount)}
-        />
+        {metrics.map((metric) => (
+          <Metric key={metric.label} label={metric.label} value={metric.value} />
+        ))}
         {results.consensusValue && (
-          <span className="inline-flex h-8 items-center gap-1.5 rounded-full border border-good/30 bg-good/15 px-3 text-xs font-semibold text-on-felt">
+          <Pill tone="success">
             <CheckCircle2 className="size-3.5 text-good" />
             Consensus: {voteLabel(snapshot.deck.id, results.consensusValue)}
-          </span>
+          </Pill>
         )}
       </div>
 
@@ -46,7 +51,7 @@ export function ResultsBar({ snapshot }: { snapshot: RoomSnapshot }) {
             <span className="h-2.5 flex-1 overflow-hidden rounded-full bg-white/10">
               <span
                 className="block h-full rounded-full bg-pink transition-[width] duration-500 ease-out"
-                style={{ width: `${Math.max(bucket.percentage, 3)}%` }}
+                style={{ width: `${Math.max(bucket.percentage, MIN_BAR_PERCENTAGE)}%` }}
               />
             </span>
             <span className="w-4 text-right text-xs tabular-nums text-on-felt/55">
@@ -68,8 +73,4 @@ function Metric({ label, value }: { label: string; value: string }) {
       </div>
     </div>
   );
-}
-
-function formatNumber(value: number): string {
-  return new Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(value);
 }

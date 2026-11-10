@@ -3,7 +3,7 @@ import { DECK_LIST } from "../../../shared/decks";
 import type { Deck, DeckId } from "../../../shared/decks";
 import { cn } from "../../lib/cn";
 
-const DECK_GLYPHS: Record<DeckId, string> = {
+const deckGlyphs: Record<DeckId, string> = {
   fibonacci: "5",
   tshirt: "M",
   "powers-of-two": "2",
@@ -62,7 +62,7 @@ function DeckOption({ deck, selected, onSelect }: DeckOptionProps) {
             : "border-line bg-muted/60 text-ink-muted",
         )}
       >
-        {DECK_GLYPHS[deck.id]}
+        {deckGlyphs[deck.id]}
       </span>
       <span className="min-w-0 flex-1">
         <span className="block text-sm font-medium text-ink">{deck.name}</span>

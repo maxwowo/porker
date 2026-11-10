@@ -1,4 +1,5 @@
 import { cn } from "../lib/cn";
+import { Pill } from "./Pill";
 
 export type ConnectionStatus = "connecting" | "open" | "reconnecting" | "closed";
 
@@ -25,15 +26,9 @@ export function StatusPill({
   const { label, dot, pulsing } = statuses[status];
 
   return (
-    <span
-      className={cn(
-        "inline-flex h-8 items-center gap-2 rounded-full border border-line bg-surface px-3 text-xs font-medium text-ink-muted",
-        className,
-      )}
-      aria-live="polite"
-    >
+    <Pill aria-live="polite" className={className}>
       <span className={cn("size-2 rounded-full", dot, pulsing && "animate-pulse")} />
       {label}
-    </span>
+    </Pill>
   );
 }

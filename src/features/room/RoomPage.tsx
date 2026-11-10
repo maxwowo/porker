@@ -5,6 +5,7 @@ import { normalizeRoomCode, ROOM_CODE_LENGTH } from "../../../shared/codes";
 import type { RoomInfo } from "../../../shared/protocol";
 import { normalizeDisplayName } from "../../../shared/validation";
 import { Button } from "../../components/Button";
+import { IconBadge } from "../../components/IconBadge";
 import { PigMark } from "../../components/Logo";
 import { StatusPill } from "../../components/StatusPill";
 import type { ConnectionStatus } from "../../components/StatusPill";
@@ -20,6 +21,11 @@ type LoadState = "loading" | "ready" | "missing" | "invalid" | "error";
 interface JoinedSession {
   participantId: string;
   name: string;
+}
+
+interface RoomNoticeAction {
+  label: string;
+  onClick: () => void;
 }
 
 export function RoomPage() {
@@ -93,67 +99,58 @@ export function RoomPage() {
     setJoined({ participantId: identity.participantId, name });
   }
 
+  const goToLobby = () => navigate("/");
   const fatal = status === "closed" ? error : null;
   const participantCount = snapshot?.participants.length ?? info?.participantCount ?? 0;
 
   function renderContent() {
-    if (loadState === "invalid") {
-      return (
-        <RoomNotice
-          title="That room code looks off."
-          body={`Room codes are ${ROOM_CODE_LENGTH} characters. Head back and try again.`}
-          actionLabel="Back to the lobby"
-          onAction={() => navigate("/")}
-        />
-      );
+    switch (loadState) {
+      case "invalid":
+        return (
+          <RoomNotice
+            title="That room code looks off."
+            body={`Room codes are ${ROOM_CODE_LENGTH} characters. Head back and try again.`}
+            action={{ label: "Back to the lobby", onClick: goToLobby }}
+          />
+        );
+      case "loading":
+        return <RoomSkeleton />;
+      case "missing":
+        return (
+          <RoomNotice
+            title="This table has cleared out."
+            body="The room may have expired. Rooms disappear 24 hours after the last activity."
+            action={{ label: "Start a new table", onClick: goToLobby }}
+          />
+        );
+      case "error":
+        return (
+          <RoomNotice
+            title="We could not reach the table."
+            body={loadError ?? "Check your connection and try again."}
+            action={{ label: "Try again", onClick: () => window.location.reload() }}
+            secondaryAction={{ label: "Back to the lobby", onClick: goToLobby }}
+          />
+        );
+      case "ready":
+        if (!info) return null;
+        if (!joined) return <JoinGate code={info.code} info={info} onJoin={handleJoin} />;
+        if (fatal) {
+          return (
+            <RoomNotice
+              title="That table is unavailable."
+              body={fatal.message}
+              action={{ label: "Start a new table", onClick: goToLobby }}
+            />
+          );
+        }
+
+        return snapshot ? (
+          <RoomBoard snapshot={snapshot} status={status} actions={actions} />
+        ) : (
+          <ConnectingTable code={code ?? ""} status={status} />
+        );
     }
-
-    if (loadState === "loading") return <RoomSkeleton />;
-
-    if (loadState === "missing") {
-      return (
-        <RoomNotice
-          title="This table has cleared out."
-          body="The room may have expired. Rooms disappear 24 hours after the last activity."
-          actionLabel="Start a new table"
-          onAction={() => navigate("/")}
-        />
-      );
-    }
-
-    if (loadState === "error") {
-      return (
-        <RoomNotice
-          title="We could not reach the table."
-          body={loadError ?? "Check your connection and try again."}
-          actionLabel="Try again"
-          onAction={() => window.location.reload()}
-          secondaryLabel="Back to the lobby"
-          onSecondary={() => navigate("/")}
-        />
-      );
-    }
-
-    if (!info) return null;
-    if (!joined) return <JoinGate code={info.code} info={info} onJoin={handleJoin} />;
-    if (fatal) {
-      return (
-        <RoomNotice
-          title="That table is unavailable."
-          body={fatal.message}
-          actionLabel="Start a new table"
-          onAction={() => navigate("/")}
-          secondaryLabel="Back to the lobby"
-          onSecondary={() => navigate("/")}
-        />
-      );
-    }
-
-    return snapshot ? (
-      <RoomBoard snapshot={snapshot} status={status} actions={actions} />
-    ) : (
-      <ConnectingTable code={code ?? ""} status={status} />
-    );
   }
 
   return (
@@ -173,9 +170,9 @@ export function RoomPage() {
 function ConnectingTable({ code, status }: { code: string; status: ConnectionStatus }) {
   return (
     <div className="flex min-h-[58vh] flex-col items-center justify-center text-center">
-      <span className="grid size-16 place-items-center rounded-[1.5rem] bg-pink-soft text-pink-strong">
+      <IconBadge size="xl">
         <PigMark className="size-10 animate-pulse" />
-      </span>
+      </IconBadge>
       <h1 className="mt-5 font-display text-3xl font-bold tracking-[-0.04em] text-ink">
         Taking your seat…
       </h1>
@@ -192,7 +189,7 @@ function ConnectingTable({ code, status }: { code: string; status: ConnectionSta
 
 function RoomSkeleton() {
   return (
-    <div className="mt-2 animate-pulse rounded-[2rem] bg-felt/90 p-5 sm:p-6">
+    <div className="mt-2 animate-pulse rounded-table bg-felt/90 p-5 sm:p-6">
       <div className="h-4 w-52 rounded-full bg-white/10" />
       <div className="mt-10 flex justify-center gap-6">
         {[0, 1, 2, 3].map((item) => (
@@ -211,39 +208,30 @@ function RoomSkeleton() {
 interface RoomNoticeProps {
   title: string;
   body: string;
-  actionLabel: string;
-  onAction: () => void;
-  secondaryLabel?: string;
-  onSecondary?: () => void;
+  action: RoomNoticeAction;
+  secondaryAction?: RoomNoticeAction;
 }
 
-function RoomNotice({
-  title,
-  body,
-  actionLabel,
-  onAction,
-  secondaryLabel,
-  onSecondary,
-}: RoomNoticeProps) {
+function RoomNotice({ title, body, action, secondaryAction }: RoomNoticeProps) {
   return (
     <div className="flex min-h-[58vh] items-center justify-center">
-      <section className="w-full max-w-md rounded-[1.75rem] border border-line bg-surface p-7 text-center shadow-[0_28px_65px_-45px_rgba(60,30,26,0.45)] sm:p-9">
-        <span className="mx-auto grid size-14 place-items-center rounded-[1.25rem] bg-pink-soft text-pink-strong">
+      <section className="w-full max-w-md rounded-panel border border-line bg-surface p-7 text-center shadow-panel-lg sm:p-9">
+        <IconBadge size="lg" className="mx-auto">
           <PigMark className="size-9" />
-        </span>
+        </IconBadge>
         <h1 className="mt-5 font-display text-3xl font-bold tracking-[-0.04em] text-ink">
           {title}
         </h1>
         <p className="mt-2 text-sm leading-6 text-ink-muted">{body}</p>
         <div className="mt-6 flex flex-col gap-2">
-          <Button size="lg" onClick={onAction}>
-            {actionLabel}
+          <Button size="lg" onClick={action.onClick}>
+            {action.label}
             <ArrowRight className="size-4.5" />
           </Button>
-          {secondaryLabel && onSecondary && (
-            <Button variant="ghost" onClick={onSecondary}>
+          {secondaryAction && (
+            <Button variant="ghost" onClick={secondaryAction.onClick}>
               <ArrowLeft className="size-4" />
-              {secondaryLabel}
+              {secondaryAction.label}
             </Button>
           )}
         </div>

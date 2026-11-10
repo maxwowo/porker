@@ -1,26 +1,26 @@
 import { cn } from "../lib/cn";
 
-const avatarStyles = [
-  "bg-[#FBE0E6] text-[#8F2943]",
-  "bg-[#FCEFD2] text-[#7A5110]",
-  "bg-[#DCEFE7] text-[#1E5A46]",
-  "bg-[#E4E7FA] text-[#3C438C]",
-  "bg-[#F1E4D7] text-[#6E4628]",
-  "bg-[#E8E2F6] text-[#55378A]",
-];
+const avatarTones = [
+  "avatar-rose",
+  "avatar-amber",
+  "avatar-mint",
+  "avatar-indigo",
+  "avatar-clay",
+  "avatar-violet",
+] as const;
+
+const sizes = {
+  sm: "size-8 text-2xs",
+  md: "size-10 text-xs",
+  lg: "size-12 text-sm",
+};
 
 interface AvatarProps {
   name: string;
   participantId: string;
-  size?: "sm" | "md" | "lg";
+  size?: keyof typeof sizes;
   className?: string;
 }
-
-const sizes = {
-  sm: "size-8 text-[0.7rem]",
-  md: "size-10 text-xs",
-  lg: "size-12 text-sm",
-};
 
 export function Avatar({ name, participantId, size = "md", className }: AvatarProps) {
   return (
@@ -28,7 +28,7 @@ export function Avatar({ name, participantId, size = "md", className }: AvatarPr
       aria-hidden="true"
       className={cn(
         "grid shrink-0 place-items-center rounded-full font-semibold uppercase tracking-wide ring-2 ring-white/70",
-        avatarStyles[hash(participantId) % avatarStyles.length],
+        avatarTones[hash(participantId) % avatarTones.length],
         sizes[size],
         className,
       )}

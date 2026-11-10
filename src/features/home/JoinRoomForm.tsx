@@ -2,6 +2,11 @@ import { useState } from "react";
 import type { SubmitEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { normalizeRoomCode, ROOM_CODE_LENGTH, sanitizeRoomCodeInput } from "../../../shared/codes";
+import { Button } from "../../components/Button";
+import { Input } from "../../components/Input";
+
+const roomCodeInputStyles =
+  "min-w-0 flex-1 font-display text-base font-semibold uppercase tracking-[0.22em] placeholder:font-sans placeholder:font-normal placeholder:tracking-normal";
 
 export function JoinRoomForm() {
   const navigate = useNavigate();
@@ -22,11 +27,11 @@ export function JoinRoomForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-2">
-      <label htmlFor="room-code" className="text-xs font-medium text-ink-muted">
+      <label htmlFor="room-code" className="block text-xs font-medium text-ink-muted">
         Have a code?
       </label>
       <div className="flex gap-2">
-        <input
+        <Input
           id="room-code"
           value={code}
           onChange={(event) => {
@@ -37,17 +42,19 @@ export function JoinRoomForm() {
           autoComplete="off"
           autoCapitalize="characters"
           spellCheck={false}
-          aria-invalid={Boolean(error)}
-          className="h-11 min-w-0 flex-1 rounded-control border border-line bg-surface px-3.5 font-display text-base font-semibold uppercase tracking-[0.22em] text-ink outline-none transition placeholder:font-sans placeholder:font-normal placeholder:tracking-normal placeholder:text-ink-muted/50 focus:border-pink/60 focus:ring-2 focus:ring-pink/15"
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? "room-code-error" : undefined}
+          className={roomCodeInputStyles}
         />
-        <button
-          type="submit"
-          className="inline-flex h-11 shrink-0 items-center justify-center rounded-control border border-line bg-surface px-4 text-sm font-medium text-ink transition hover:bg-muted active:translate-y-px"
-        >
+        <Button type="submit" variant="secondary" className="shrink-0">
           Join
-        </button>
+        </Button>
       </div>
-      {error && <p className="text-xs text-danger">{error}</p>}
+      {error && (
+        <p id="room-code-error" className="text-xs text-danger" role="alert">
+          {error}
+        </p>
+      )}
     </form>
   );
 }

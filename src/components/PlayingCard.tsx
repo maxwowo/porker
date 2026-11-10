@@ -38,8 +38,7 @@ const sizes: Record<CardSize, CardStyle> = {
 };
 
 const faces: Record<CardFace, string> = {
-  front:
-    "border-line bg-card text-card-ink shadow-[0_8px_18px_-12px_rgba(43,23,20,0.5),inset_0_0_0_1px_rgba(255,255,255,0.55)]",
+  front: "border-line bg-card text-card-ink shadow-card",
   back: "card-back border-felt-deep/60 text-white/90",
   empty: "border-dashed border-white/15 bg-white/[0.025] text-on-felt/25",
 };
@@ -52,7 +51,7 @@ export function PlayingCard({
   style,
 }: PlayingCardProps) {
   const { dimensions, mark, backMark } = sizes[size];
-  const compact = label.length <= 2;
+  const compactLabel = label.length <= 2;
 
   return (
     <div
@@ -72,7 +71,7 @@ export function PlayingCard({
           <span
             className={cn(
               "font-display font-bold leading-none tracking-[-0.06em]",
-              compact ? "" : "text-[0.72em] tracking-[-0.08em]",
+              !compactLabel && "text-[0.72em] tracking-[-0.08em]",
             )}
           >
             {label}
@@ -83,7 +82,7 @@ export function PlayingCard({
       {face === "back" && (
         <>
           <span className="absolute inset-1.5 rounded-[inherit] border border-white/15" />
-          <span className="absolute inset-0 card-back-pattern opacity-30" />
+          <span className="card-back-pattern absolute inset-0 opacity-30" />
           <PigMark className={cn("relative text-white/85", backMark)} />
         </>
       )}

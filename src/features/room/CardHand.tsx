@@ -48,18 +48,18 @@ export function CardHand({ deck, selected, disabled, onSelect }: CardHandProps) 
               onClick={() => onSelect(isSelected ? null : card.value)}
               className={cn(
                 "relative rounded-[1.05rem] transition duration-200 ease-out focus-visible:outline-offset-4 disabled:cursor-not-allowed disabled:opacity-55",
-                isSelected
-                  ? "-translate-y-1.5 shadow-[0_14px_24px_-14px_rgba(60,30,26,0.65)]"
-                  : "hover:-translate-y-0.5",
+                isSelected ? "-translate-y-1.5 shadow-card-raised" : "hover:-translate-y-0.5",
               )}
             >
               <PlayingCard
                 label={card.label}
                 face="front"
                 size="md"
-                className={cn(
-                  isSelected && "border-pink-strong ring-2 ring-inset ring-pink-strong/80",
-                )}
+                className={
+                  isSelected
+                    ? "border-pink-strong ring-2 ring-inset ring-pink-strong/80"
+                    : undefined
+                }
               />
             </button>
           );

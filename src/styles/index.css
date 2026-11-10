@@ -20,6 +20,19 @@
   --gold: #d39a2f;
   --good: #43a77b;
   --danger: #b93838;
+
+  --avatar-rose-surface: #fbe0e6;
+  --avatar-rose-ink: #8f2943;
+  --avatar-amber-surface: #fcefd2;
+  --avatar-amber-ink: #7a5110;
+  --avatar-mint-surface: #dcefe7;
+  --avatar-mint-ink: #1e5a46;
+  --avatar-indigo-surface: #e4e7fa;
+  --avatar-indigo-ink: #3c438c;
+  --avatar-clay-surface: #f1e4d7;
+  --avatar-clay-ink: #6e4628;
+  --avatar-violet-surface: #e8e2f6;
+  --avatar-violet-ink: #55378a;
 }
 
 .dark {
@@ -40,6 +53,19 @@
   --gold: #ecc05f;
   --good: #62c79a;
   --danger: #f48b8b;
+
+  --avatar-rose-surface: #4a2832;
+  --avatar-rose-ink: #f6b7c4;
+  --avatar-amber-surface: #453518;
+  --avatar-amber-ink: #f0cf8a;
+  --avatar-mint-surface: #1d3b31;
+  --avatar-mint-ink: #a5e0c8;
+  --avatar-indigo-surface: #292c4c;
+  --avatar-indigo-ink: #c3c7f5;
+  --avatar-clay-surface: #3d2f26;
+  --avatar-clay-ink: #e2c3a5;
+  --avatar-violet-surface: #322947;
+  --avatar-violet-ink: #d6c3f5;
 }
 
 @theme inline {
@@ -62,9 +88,61 @@
   --color-danger: var(--danger);
   --color-card: #fff9ee;
   --color-card-ink: #2b1c1a;
+
   --radius-control: 0.75rem;
+  --radius-card: 1.35rem;
+  --radius-tray: 1.5rem;
+  --radius-panel: 1.75rem;
+  --radius-table: 2rem;
+
+  --text-2xs: 0.7rem;
+  --text-2xs--line-height: 1rem;
+
+  --shadow-panel: 0 18px 40px -32px rgb(60 30 26 / 0.4);
+  --shadow-panel-lg: 0 30px 70px -42px rgb(60 30 26 / 0.5);
+  --shadow-tray: 0 22px 55px -30px rgb(45 24 21 / 0.55);
+  --shadow-felt: 0 28px 60px -38px rgb(12 50 42 / 0.8);
+  --shadow-table: 0 32px 70px -40px rgb(7 40 33 / 0.9);
+  --shadow-card: 0 8px 18px -12px rgb(43 23 20 / 0.5), inset 0 0 0 1px rgb(255 255 255 / 0.55);
+  --shadow-card-raised: 0 14px 24px -14px rgb(60 30 26 / 0.65);
+  --shadow-badge: 0 2px 7px rgb(7 40 33 / 0.5);
+  --shadow-input: inset 0 1px 0 rgb(255 255 255 / 0.35);
+  --shadow-action: 0 10px 24px -12px var(--pink-strong);
+
   --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Space Grotesk Variable", "Inter Variable", ui-sans-serif, sans-serif;
+}
+
+@layer components {
+  .avatar-rose {
+    background-color: var(--avatar-rose-surface);
+    color: var(--avatar-rose-ink);
+  }
+
+  .avatar-amber {
+    background-color: var(--avatar-amber-surface);
+    color: var(--avatar-amber-ink);
+  }
+
+  .avatar-mint {
+    background-color: var(--avatar-mint-surface);
+    color: var(--avatar-mint-ink);
+  }
+
+  .avatar-indigo {
+    background-color: var(--avatar-indigo-surface);
+    color: var(--avatar-indigo-ink);
+  }
+
+  .avatar-clay {
+    background-color: var(--avatar-clay-surface);
+    color: var(--avatar-clay-ink);
+  }
+
+  .avatar-violet {
+    background-color: var(--avatar-violet-surface);
+    color: var(--avatar-violet-ink);
+  }
 }
 
 @layer base {

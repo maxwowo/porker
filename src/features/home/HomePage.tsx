@@ -1,7 +1,9 @@
 import { EyeOff, Ghost, TimerReset } from "lucide-react";
-import { Logo, PigMark } from "../../components/Logo";
+import { IconBadge } from "../../components/IconBadge";
+import { PigMark } from "../../components/Logo";
 import { PigMascot } from "../../components/PigMascot";
-import { ThemeToggle } from "../../components/ThemeToggle";
+import { Pill } from "../../components/Pill";
+import { SiteHeader } from "../../components/SiteHeader";
 import { CreateRoomForm } from "./CreateRoomForm";
 
 const features = [
@@ -22,6 +24,8 @@ const features = [
   },
 ];
 
+const highlights = ["No sign-up", "Private votes", "Self-cleaning rooms"];
+
 export function HomePage() {
   return (
     <div className="relative min-h-dvh overflow-x-clip">
@@ -30,24 +34,22 @@ export function HomePage() {
         className="pointer-events-none absolute inset-x-0 top-0 h-[34rem] bg-[radial-gradient(ellipse_at_top,var(--pink-soft),transparent_68%)] opacity-80"
       />
 
-      <header className="relative mx-auto flex max-w-6xl items-center justify-between px-5 py-5">
-        <Logo />
-        <div className="flex items-center gap-2">
+      <div className="relative">
+        <SiteHeader>
           <span className="hidden text-xs font-medium text-ink-muted sm:inline">
             No accounts. No ads. No nonsense.
           </span>
-          <ThemeToggle />
-        </div>
-      </header>
+        </SiteHeader>
+      </div>
 
       <main className="relative">
         <section className="mx-auto max-w-6xl px-5 pb-14 pt-8 sm:pt-14 lg:pb-24">
           <div className="grid items-start gap-10 lg:grid-cols-[1.06fr_0.94fr] lg:gap-14">
             <div>
-              <span className="inline-flex items-center gap-2 rounded-full border border-pink/20 bg-pink-soft/70 px-3 py-1.5 text-xs font-semibold text-pink-strong">
+              <Pill tone="accent">
                 <PigMark className="size-3.5" />
                 Anonymous planning poker
-              </span>
+              </Pill>
 
               <h1 className="mt-6 font-display text-[clamp(2.9rem,7vw,5rem)] font-bold leading-[0.94] tracking-[-0.055em] text-ink">
                 Point stories,
@@ -60,14 +62,9 @@ export function HomePage() {
                 get back to building.
               </p>
 
-              <div className="mt-6 flex flex-wrap gap-2 text-xs font-medium text-ink-muted">
-                {["No sign-up", "Private votes", "Self-cleaning rooms"].map((item) => (
-                  <span
-                    key={item}
-                    className="rounded-full border border-line bg-surface/75 px-3 py-1.5"
-                  >
-                    {item}
-                  </span>
+              <div className="mt-6 flex flex-wrap gap-2">
+                {highlights.map((highlight) => (
+                  <Pill key={highlight}>{highlight}</Pill>
                 ))}
               </div>
 
@@ -80,18 +77,18 @@ export function HomePage() {
 
         <section className="mx-auto max-w-6xl px-5 pb-16">
           <div className="grid gap-3 sm:grid-cols-3">
-            {features.map((feature) => (
+            {features.map(({ icon: Icon, title, body }) => (
               <article
-                key={feature.title}
-                className="rounded-[1.35rem] border border-line bg-surface/80 p-5 shadow-[0_18px_40px_-32px_rgba(60,30,26,0.4)]"
+                key={title}
+                className="rounded-card border border-line bg-surface/80 p-5 shadow-panel"
               >
-                <span className="grid size-9 place-items-center rounded-xl bg-pink-soft text-pink-strong">
-                  <feature.icon className="size-4.5" />
-                </span>
+                <IconBadge size="sm">
+                  <Icon className="size-4.5" />
+                </IconBadge>
                 <h2 className="mt-4 font-display text-base font-bold tracking-[-0.01em] text-ink">
-                  {feature.title}
+                  {title}
                 </h2>
-                <p className="mt-1.5 text-sm leading-6 text-ink-muted">{feature.body}</p>
+                <p className="mt-1.5 text-sm leading-6 text-ink-muted">{body}</p>
               </article>
             ))}
           </div>

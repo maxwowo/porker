@@ -1,7 +1,8 @@
 import { DurableObject } from "cloudflare:workers";
 import { DEFAULT_DECK_ID, isDeckId } from "../../shared/decks";
 import { normalizeRoomCode } from "../../shared/codes";
-import type { ClientMessage, RoomRecord } from "../../shared/protocol";
+import { errorJson, isWebSocketUpgrade, json, readJsonObject } from "../../shared/http";
+import type { ClientMessage, RoomInfo, RoomRecord } from "../../shared/protocol";
 import {
   CLOSE_NORMAL,
   CLOSE_PROTOCOL_ERROR,
@@ -22,6 +23,7 @@ import {
 import {
   isValidParticipantId,
   MAX_MESSAGE_LENGTH,
+  NAME_REQUIREMENT,
   normalizeDisplayName,
   parseClientMessage,
   ROOM_TTL_MS,
@@ -60,14 +62,14 @@ export class Room extends DurableObject<Env> {
       return this.openSocket(request);
     }
 
-    return json({ error: { code: "NOT_FOUND", message: "Not found." } }, 404);
+    return errorJson(404, "NOT_FOUND", "Not found.");
   }
 
   async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
     await this.loaded;
 
     if (!this.room) {
-      safeClose(ws, CLOSE_ROOM_GONE, "Room expired");
+      tryClose(ws, CLOSE_ROOM_GONE, "Room expired");
       return;
     }
     if (typeof message !== "string" || message.length > MAX_MESSAGE_LENGTH) {
@@ -81,8 +83,9 @@ export class Room extends DurableObject<Env> {
       return;
     }
 
-    const attachment = socketAttachment(ws);
-    if (!attachment.participantId) {
+    const { participantId } = socketAttachment(ws);
+
+    if (!participantId) {
       if (parsed.type !== "join") {
         this.rejectSocket(ws, "NOT_JOINED", "Join a room before playing.");
         return;
@@ -92,7 +95,7 @@ export class Room extends DurableObject<Env> {
     }
 
     if (parsed.type === "join") {
-      if (parsed.participantId !== attachment.participantId) {
+      if (parsed.participantId !== participantId) {
         this.rejectSocket(ws, "INVALID_PARTICIPANT", "That seat belongs to someone else.");
         return;
       }
@@ -100,45 +103,39 @@ export class Room extends DurableObject<Env> {
       return;
     }
 
-    await this.handleAction(ws, attachment.participantId, parsed);
+    await this.handleAction(ws, participantId, parsed);
   }
 
-  async webSocketClose(
-    _ws: WebSocket,
-    _code: number,
-    _reason: string,
-    _wasClean: boolean,
-  ): Promise<void> {
+  async webSocketClose(): Promise<void> {
     await this.loaded;
     this.broadcast();
   }
 
-  async webSocketError(_ws: WebSocket, _error: unknown): Promise<void> {
+  async webSocketError(): Promise<void> {
     await this.loaded;
     this.broadcast();
   }
 
   async alarm(): Promise<void> {
     for (const ws of this.ctx.getWebSockets()) {
-      safeClose(ws, CLOSE_ROOM_GONE, "Room expired");
+      tryClose(ws, CLOSE_ROOM_GONE, "Room expired");
     }
     this.room = null;
     await this.ctx.storage.deleteAll();
   }
 
   private async createRoom(request: Request): Promise<Response> {
-    const body: unknown = await request.json().catch(() => null);
-    const record = body && typeof body === "object" ? (body as Record<string, unknown>) : null;
+    const body = await readJsonObject(request);
+    const code = typeof body?.code === "string" ? normalizeRoomCode(body.code) : null;
 
-    const code = typeof record?.code === "string" ? normalizeRoomCode(record.code) : null;
     if (!code) {
-      return json({ error: { code: "INVALID_CODE", message: "Invalid room code." } }, 400);
+      return errorJson(400, "INVALID_CODE", "Invalid room code.");
     }
     if (this.room) {
-      return json({ error: { code: "ROOM_EXISTS", message: "That room already exists." } }, 409);
+      return errorJson(409, "ROOM_EXISTS", "That room already exists.");
     }
 
-    const deckId = isDeckId(record?.deckId) ? record.deckId : DEFAULT_DECK_ID;
+    const deckId = isDeckId(body?.deckId) ? body.deckId : DEFAULT_DECK_ID;
     const room = createRoom(code, deckId, Date.now());
     this.room = room;
     await this.persist(room);
@@ -148,7 +145,7 @@ export class Room extends DurableObject<Env> {
 
   private roomInfo(): Response {
     if (!this.room) {
-      return json({ error: { code: "ROOM_NOT_FOUND", message: "Room not found." } }, 404);
+      return errorJson(404, "ROOM_NOT_FOUND", "Room not found.");
     }
 
     return json({
@@ -157,23 +154,21 @@ export class Room extends DurableObject<Env> {
       phase: this.room.phase,
       round: this.room.round,
       participantCount: Object.keys(this.room.participants).length,
-    });
+    } satisfies RoomInfo);
   }
 
   private openSocket(request: Request): Response {
-    if (request.headers.get("Upgrade")?.toLowerCase() !== "websocket") {
-      return json(
-        { error: { code: "EXPECTED_WEBSOCKET", message: "Expected a WebSocket upgrade." } },
-        426,
-      );
+    if (!isWebSocketUpgrade(request)) {
+      return errorJson(426, "EXPECTED_WEBSOCKET", "Expected a WebSocket upgrade.");
     }
+
     const pair = new WebSocketPair();
     const [client, server] = Object.values(pair);
     this.ctx.acceptWebSocket(server);
     server.serializeAttachment({ participantId: null } satisfies SocketAttachment);
 
     if (!this.room) {
-      safeClose(server, CLOSE_ROOM_GONE, "Room not found");
+      tryClose(server, CLOSE_ROOM_GONE, "Room not found");
     }
 
     return new Response(null, { status: 101, webSocket: client });
@@ -184,7 +179,7 @@ export class Room extends DurableObject<Env> {
     message: Extract<ClientMessage, { type: "join" }>,
   ): Promise<void> {
     if (!this.room) {
-      safeClose(ws, CLOSE_ROOM_GONE, "Room expired");
+      tryClose(ws, CLOSE_ROOM_GONE, "Room expired");
       return;
     }
     if (!isValidParticipantId(message.participantId)) {
@@ -194,24 +189,18 @@ export class Room extends DurableObject<Env> {
 
     const name = normalizeDisplayName(message.name);
     if (!name) {
-      this.rejectSocket(ws, "INVALID_NAME", "Use a name between 1 and 32 characters.");
+      this.rejectSocket(ws, "INVALID_NAME", NAME_REQUIREMENT);
       return;
     }
 
     const isNewParticipant = !this.room.participants[message.participantId];
     if (isNewParticipant && isRoomFull(this.room)) {
-      send(ws, {
-        type: "error",
-        code: "ROOM_FULL",
-        message: "This room is full.",
-      });
-      safeClose(ws, CLOSE_ROOM_FULL, "Room full");
+      trySend(ws, { type: "error", code: "ROOM_FULL", message: "This room is full." });
+      tryClose(ws, CLOSE_ROOM_FULL, "Room full");
       return;
     }
 
-    ws.serializeAttachment({
-      participantId: message.participantId,
-    } satisfies SocketAttachment);
+    ws.serializeAttachment({ participantId: message.participantId } satisfies SocketAttachment);
 
     const next = joinRoom(this.room, message.participantId, name, Date.now());
     await this.commit(next);
@@ -223,7 +212,7 @@ export class Room extends DurableObject<Env> {
     message: Exclude<ClientMessage, { type: "join" }>,
   ): Promise<void> {
     if (!this.room) {
-      safeClose(ws, CLOSE_ROOM_GONE, "Room expired");
+      tryClose(ws, CLOSE_ROOM_GONE, "Room expired");
       return;
     }
     if (!this.room.participants[participantId]) {
@@ -234,42 +223,28 @@ export class Room extends DurableObject<Env> {
     const now = Date.now();
 
     switch (message.type) {
-      case "vote": {
+      case "vote":
         await this.commit(castVote(this.room, participantId, message.card, now));
         return;
-      }
-      case "reveal": {
+      case "reveal":
         await this.commit(revealRoom(this.room, now));
         return;
-      }
-      case "reset": {
+      case "reset":
         await this.commit(resetRoom(this.room, now));
         return;
-      }
       case "rename": {
         const name = normalizeDisplayName(message.name);
         if (!name) {
-          send(ws, {
-            type: "error",
-            code: "INVALID_NAME",
-            message: "Use a name between 1 and 32 characters.",
-          });
+          trySend(ws, { type: "error", code: "INVALID_NAME", message: NAME_REQUIREMENT });
           return;
         }
         await this.commit(renameParticipant(this.room, participantId, name, now));
         return;
       }
-      case "leave": {
-        if (!this.room.participants[participantId]) return;
-        const next = removeParticipant(this.room, participantId, now);
-        await this.commit(next);
-        for (const socket of this.ctx.getWebSockets()) {
-          if (socketAttachment(socket).participantId === participantId) {
-            safeClose(socket, CLOSE_NORMAL, "Left room");
-          }
-        }
+      case "leave":
+        await this.commit(removeParticipant(this.room, participantId, now));
+        this.closeSocketsFor(participantId);
         return;
-      }
     }
   }
 
@@ -289,30 +264,31 @@ export class Room extends DurableObject<Env> {
     const room = this.room;
     if (!room) return;
 
-    const sockets = this.ctx.getWebSockets();
-    const connectedIds = new Set<string>();
+    const recipients = this.ctx.getWebSockets().flatMap((socket) => {
+      const { participantId } = socketAttachment(socket);
+      return participantId && room.participants[participantId] ? [{ socket, participantId }] : [];
+    });
+    const connectedIds = new Set(recipients.map(({ participantId }) => participantId));
 
-    for (const ws of sockets) {
-      const participantId = socketAttachment(ws).participantId;
-      if (participantId && room.participants[participantId]) {
-        connectedIds.add(participantId);
-      }
-    }
-
-    for (const ws of sockets) {
-      const participantId = socketAttachment(ws).participantId;
-      if (!participantId || !room.participants[participantId]) continue;
-
-      send(ws, {
+    for (const { socket, participantId } of recipients) {
+      trySend(socket, {
         type: "state",
         snapshot: toSnapshot(room, participantId, connectedIds),
       });
     }
   }
 
+  private closeSocketsFor(participantId: string): void {
+    for (const socket of this.ctx.getWebSockets()) {
+      if (socketAttachment(socket).participantId === participantId) {
+        tryClose(socket, CLOSE_NORMAL, "Left room");
+      }
+    }
+  }
+
   private rejectSocket(ws: WebSocket, code: string, message: string): void {
-    send(ws, { type: "error", code, message });
-    safeClose(ws, CLOSE_PROTOCOL_ERROR, message);
+    trySend(ws, { type: "error", code, message });
+    tryClose(ws, CLOSE_PROTOCOL_ERROR, message);
   }
 }
 
@@ -320,25 +296,18 @@ function socketAttachment(ws: WebSocket): SocketAttachment {
   return (ws.deserializeAttachment() as SocketAttachment | null) ?? { participantId: null };
 }
 
-function send(ws: WebSocket, message: unknown): void {
+function trySend(ws: WebSocket, message: unknown): void {
   try {
     ws.send(JSON.stringify(message));
   } catch {
-    // The socket is already closing; there is nothing else to do.
+    return;
   }
 }
 
-function safeClose(ws: WebSocket, code: number, reason: string): void {
+function tryClose(ws: WebSocket, code: number, reason: string): void {
   try {
     ws.close(code, reason);
   } catch {
-    // The socket is already closed.
+    return;
   }
-}
-
-function json(body: unknown, status = 200): Response {
-  return Response.json(body, {
-    status,
-    headers: { "Cache-Control": "no-store" },
-  });
 }

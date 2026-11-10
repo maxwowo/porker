@@ -1,23 +1,19 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import { normalizeRoomCode } from "../../../shared/codes";
+import { normalizeRoomCode, ROOM_CODE_LENGTH, sanitizeRoomCodeInput } from "../../../shared/codes";
 
 export function JoinRoomForm() {
   const navigate = useNavigate();
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    setError(null);
-  }, [code]);
-
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const normalized = normalizeRoomCode(code);
 
     if (!normalized) {
-      setError("That code is not valid. Check the six characters and try again.");
+      setError(`That code is not valid. Check the ${ROOM_CODE_LENGTH} characters and try again.`);
       return;
     }
 
@@ -34,12 +30,8 @@ export function JoinRoomForm() {
           id="room-code"
           value={code}
           onChange={(event) => {
-            setCode(
-              event.target.value
-                .replace(/[^a-zA-Z0-9]/g, "")
-                .toUpperCase()
-                .slice(0, 6),
-            );
+            setCode(sanitizeRoomCodeInput(event.target.value));
+            setError(null);
           }}
           placeholder="K7M2QP"
           autoComplete="off"

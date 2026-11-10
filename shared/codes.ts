@@ -13,6 +13,13 @@ export function normalizeRoomCode(input: string): string | null {
   return ROOM_CODE_PATTERN.test(code) ? code : null;
 }
 
+export function sanitizeRoomCodeInput(input: string): string {
+  return input
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .toUpperCase()
+    .slice(0, ROOM_CODE_LENGTH);
+}
+
 export function isRoomCode(input: string): boolean {
   return ROOM_CODE_PATTERN.test(input);
 }

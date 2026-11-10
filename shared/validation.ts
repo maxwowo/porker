@@ -4,6 +4,7 @@ export const MAX_PARTICIPANTS = 50;
 export const MAX_NAME_LENGTH = 32;
 export const MAX_MESSAGE_LENGTH = 4096;
 export const ROOM_TTL_MS = 24 * 60 * 60 * 1000;
+export const NAME_REQUIREMENT = `Use a name between 1 and ${MAX_NAME_LENGTH} characters.`;
 
 const PARTICIPANT_ID_PATTERN = /^[A-Za-z0-9_-]{8,64}$/;
 const CONTROL_CHARACTERS = /[\u0000-\u001F\u007F]/g;

@@ -11,6 +11,11 @@ import type { ConnectionStatus } from "../../components/StatusPill";
 const HEARTBEAT_MS = 25_000;
 const RECONNECT_CAP_MS = 10_000;
 
+const CLOSE_ERRORS: Partial<Record<number, RoomSocketError>> = {
+  [CLOSE_ROOM_GONE]: { code: "ROOM_GONE", message: "That room expired or no longer exists." },
+  [CLOSE_ROOM_FULL]: { code: "ROOM_FULL", message: "That room is full." },
+};
+
 export interface RoomSocketError {
   code: string;
   message: string;
@@ -63,6 +68,13 @@ export function useRoomSocket({ code, participantId, name, enabled }: UseRoomSoc
       }
     };
 
+    const clearRetry = () => {
+      if (retryTimer !== undefined) {
+        window.clearTimeout(retryTimer);
+        retryTimer = undefined;
+      }
+    };
+
     const scheduleReconnect = () => {
       if (disposed || fatal) return;
 
@@ -92,21 +104,9 @@ export function useRoomSocket({ code, participantId, name, enabled }: UseRoomSoc
     };
 
     const connect = () => {
-      if (disposed || fatal) return;
+      if (disposed || fatal || isSocketActive(socketRef.current)) return;
 
-      const current = socketRef.current;
-      if (
-        current &&
-        (current.readyState === WebSocket.OPEN || current.readyState === WebSocket.CONNECTING)
-      ) {
-        return;
-      }
-
-      if (retryTimer !== undefined) {
-        window.clearTimeout(retryTimer);
-        retryTimer = undefined;
-      }
-
+      clearRetry();
       setStatus(attempts === 0 ? "connecting" : "reconnecting");
 
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
@@ -175,20 +175,10 @@ export function useRoomSocket({ code, participantId, name, enabled }: UseRoomSoc
 
     const reconnectNow = () => {
       if (disposed || fatal || document.visibilityState === "hidden") return;
-
-      const current = socketRef.current;
-      if (
-        current &&
-        (current.readyState === WebSocket.OPEN || current.readyState === WebSocket.CONNECTING)
-      ) {
-        return;
-      }
+      if (isSocketActive(socketRef.current)) return;
 
       attempts = 0;
-      if (retryTimer !== undefined) {
-        window.clearTimeout(retryTimer);
-        retryTimer = undefined;
-      }
+      clearRetry();
       connect();
     };
 
@@ -200,12 +190,12 @@ export function useRoomSocket({ code, participantId, name, enabled }: UseRoomSoc
       disposed = true;
       window.removeEventListener("online", reconnectNow);
       document.removeEventListener("visibilitychange", reconnectNow);
-      if (retryTimer !== undefined) window.clearTimeout(retryTimer);
+      clearRetry();
       clearHeartbeat();
 
       const socket = socketRef.current;
       socketRef.current = null;
-      socket?.close(1000, "Leaving room");
+      socket?.close(CLOSE_NORMAL, "Leaving room");
     };
   }, [code, enabled, participantId]);
 
@@ -223,13 +213,20 @@ export function useRoomSocket({ code, participantId, name, enabled }: UseRoomSoc
       rename: (nextName) => send({ type: "rename", name: nextName }),
       leave: () => {
         send({ type: "leave" });
-        window.setTimeout(() => socketRef.current?.close(1000, "Left room"), 100);
+        window.setTimeout(() => socketRef.current?.close(CLOSE_NORMAL, "Left room"), 100);
       },
     }),
     [send],
   );
 
   return { status, snapshot, error, actions };
+}
+
+function isSocketActive(socket: WebSocket | null): boolean {
+  return (
+    socket !== null &&
+    (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)
+  );
 }
 
 function parseServerMessage(raw: string): ServerMessage | null {
@@ -245,11 +242,10 @@ function parseServerMessage(raw: string): ServerMessage | null {
 }
 
 function closeError(code: number): RoomSocketError {
-  if (code === CLOSE_ROOM_GONE) {
-    return { code: "ROOM_GONE", message: "That room expired or no longer exists." };
-  }
-  if (code === CLOSE_ROOM_FULL) {
-    return { code: "ROOM_FULL", message: "That room is full." };
-  }
-  return { code: "CONNECTION_REJECTED", message: "The table rejected the connection." };
+  return (
+    CLOSE_ERRORS[code] ?? {
+      code: "CONNECTION_REJECTED",
+      message: "The table rejected the connection.",
+    }
+  );
 }

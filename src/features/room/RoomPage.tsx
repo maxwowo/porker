@@ -1,7 +1,7 @@
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { normalizeRoomCode } from "../../../shared/codes";
+import { normalizeRoomCode, ROOM_CODE_LENGTH } from "../../../shared/codes";
 import type { RoomInfo } from "../../../shared/protocol";
 import { normalizeDisplayName } from "../../../shared/validation";
 import { Button } from "../../components/Button";
@@ -30,7 +30,6 @@ export function RoomPage() {
   const [info, setInfo] = useState<RoomInfo | null>(null);
   const [loadState, setLoadState] = useState<LoadState>(code ? "loading" : "invalid");
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [identity] = useState(() => (code ? peekIdentity(code) : null));
   const [joined, setJoined] = useState<JoinedSession | null>(null);
 
   useEffect(() => {
@@ -63,13 +62,14 @@ export function RoomPage() {
           setLoadState("missing");
           return;
         }
+
         setInfo(room);
         setLoadState("ready");
 
-        const storedIdentity = identity ?? peekIdentity(code);
+        const identity = peekIdentity(code);
         const storedName = normalizeDisplayName(loadName());
-        if (storedIdentity && storedName) {
-          setJoined({ participantId: storedIdentity.participantId, name: storedName });
+        if (identity && storedName) {
+          setJoined({ participantId: identity.participantId, name: storedName });
         }
       })
       .catch((cause: unknown) => {
@@ -83,18 +83,78 @@ export function RoomPage() {
     return () => {
       cancelled = true;
     };
-  }, [code, identity]);
+  }, [code]);
 
   function handleJoin(name: string) {
     if (!code) return;
 
-    const nextIdentity = getOrCreateIdentity(code);
+    const identity = getOrCreateIdentity(code);
     saveName(name);
-    setJoined({ participantId: nextIdentity.participantId, name });
+    setJoined({ participantId: identity.participantId, name });
   }
 
   const fatal = status === "closed" ? error : null;
   const participantCount = snapshot?.participants.length ?? info?.participantCount ?? 0;
+
+  function renderContent() {
+    if (loadState === "invalid") {
+      return (
+        <RoomNotice
+          title="That room code looks off."
+          body={`Room codes are ${ROOM_CODE_LENGTH} characters. Head back and try again.`}
+          actionLabel="Back to the lobby"
+          onAction={() => navigate("/")}
+        />
+      );
+    }
+
+    if (loadState === "loading") return <RoomSkeleton />;
+
+    if (loadState === "missing") {
+      return (
+        <RoomNotice
+          title="This table has cleared out."
+          body="The room may have expired. Rooms disappear 24 hours after the last activity."
+          actionLabel="Start a new table"
+          onAction={() => navigate("/")}
+        />
+      );
+    }
+
+    if (loadState === "error") {
+      return (
+        <RoomNotice
+          title="We could not reach the table."
+          body={loadError ?? "Check your connection and try again."}
+          actionLabel="Try again"
+          onAction={() => window.location.reload()}
+          secondaryLabel="Back to the lobby"
+          onSecondary={() => navigate("/")}
+        />
+      );
+    }
+
+    if (!info) return null;
+    if (!joined) return <JoinGate code={info.code} info={info} onJoin={handleJoin} />;
+    if (fatal) {
+      return (
+        <RoomNotice
+          title="That table is unavailable."
+          body={fatal.message}
+          actionLabel="Start a new table"
+          onAction={() => navigate("/")}
+          secondaryLabel="Back to the lobby"
+          onSecondary={() => navigate("/")}
+        />
+      );
+    }
+
+    return snapshot ? (
+      <RoomBoard snapshot={snapshot} status={status} actions={actions} />
+    ) : (
+      <ConnectingTable code={code ?? ""} status={status} />
+    );
+  }
 
   return (
     <div className="mx-auto min-h-dvh w-full max-w-6xl px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-4 sm:px-6 sm:pt-5">
@@ -105,61 +165,7 @@ export function RoomPage() {
         onLeave={actions.leave}
       />
 
-      <main className="mt-5">
-        {loadState === "invalid" && (
-          <RoomNotice
-            title="That room code looks off."
-            body="Room codes are six characters. Head back and try again."
-            actionLabel="Back to the lobby"
-            onAction={() => navigate("/")}
-          />
-        )}
-
-        {loadState === "loading" && <RoomSkeleton />}
-
-        {loadState === "missing" && (
-          <RoomNotice
-            title="This table has cleared out."
-            body="The room may have expired. Rooms disappear 24 hours after the last activity."
-            actionLabel="Start a new table"
-            onAction={() => navigate("/")}
-          />
-        )}
-
-        {loadState === "error" && (
-          <RoomNotice
-            title="We could not reach the table."
-            body={loadError ?? "Check your connection and try again."}
-            actionLabel="Try again"
-            onAction={() => window.location.reload()}
-            secondaryLabel="Back to the lobby"
-            onSecondary={() => navigate("/")}
-          />
-        )}
-
-        {loadState === "ready" && info && !joined && (
-          <JoinGate code={info.code} info={info} onJoin={handleJoin} />
-        )}
-
-        {loadState === "ready" && joined && fatal && (
-          <RoomNotice
-            title="That table is unavailable."
-            body={fatal.message}
-            actionLabel="Start a new table"
-            onAction={() => navigate("/")}
-            secondaryLabel="Back to the lobby"
-            onSecondary={() => navigate("/")}
-          />
-        )}
-
-        {loadState === "ready" && joined && !fatal && snapshot && (
-          <RoomBoard snapshot={snapshot} status={status} actions={actions} />
-        )}
-
-        {loadState === "ready" && joined && !fatal && !snapshot && (
-          <ConnectingTable code={code ?? ""} status={status} />
-        )}
-      </main>
+      <main className="mt-5">{renderContent()}</main>
     </div>
   );
 }

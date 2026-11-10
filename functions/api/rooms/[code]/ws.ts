@@ -1,9 +1,10 @@
+import { errorJson, isWebSocketUpgrade } from "../../../../shared/http";
 import type { Env } from "../../../_lib/env";
-import { errorJson, isTrustedOrigin } from "../../../_lib/http";
+import { isTrustedOrigin } from "../../../_lib/http";
 import { readRoomCode, roomStub } from "../../../_lib/room";
 
 export const onRequestGet: PagesFunction<Env, "code"> = async ({ request, params, env }) => {
-  if (request.headers.get("Upgrade")?.toLowerCase() !== "websocket") {
+  if (!isWebSocketUpgrade(request)) {
     return errorJson(426, "EXPECTED_WEBSOCKET", "Expected a WebSocket upgrade.");
   }
   if (!isTrustedOrigin(request)) {

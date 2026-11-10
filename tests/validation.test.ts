@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { generateRoomCode, isRoomCode, normalizeRoomCode, ROOM_CODE_LENGTH } from "../shared/codes";
+import {
+  generateRoomCode,
+  isRoomCode,
+  normalizeRoomCode,
+  ROOM_CODE_LENGTH,
+  sanitizeRoomCodeInput,
+} from "../shared/codes";
 import { isDeckId } from "../shared/decks";
 import {
   isValidParticipantId,
@@ -24,6 +30,11 @@ describe("validation", () => {
     expect(normalizeRoomCode("abc234")).toBe("ABC234");
     expect(normalizeRoomCode("ABC23")).toBeNull();
     expect(normalizeRoomCode("ABC12O")).toBeNull();
+  });
+
+  it("sanitizes partial room code input", () => {
+    expect(sanitizeRoomCodeInput("ab-c 234xyz")).toBe("ABC234");
+    expect(sanitizeRoomCodeInput("abc")).toBe("ABC");
   });
 
   it("normalizes display names", () => {

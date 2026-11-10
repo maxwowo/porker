@@ -1,7 +1,8 @@
 import { DEFAULT_DECK_ID, isDeckId } from "../../shared/decks";
 import { generateRoomCode } from "../../shared/codes";
+import { errorJson, json, readJsonObject } from "../../shared/http";
 import type { Env } from "../_lib/env";
-import { errorJson, isTrustedOrigin, json } from "../_lib/http";
+import { isTrustedOrigin } from "../_lib/http";
 import { roomStub } from "../_lib/room";
 
 const CREATE_ATTEMPTS = 5;
@@ -11,9 +12,8 @@ export const onRequestPost: PagesFunction<Env> = async ({ request, env }) => {
     return errorJson(403, "ORIGIN_NOT_ALLOWED", "This request came from an untrusted origin.");
   }
 
-  const body: unknown = await request.json().catch(() => null);
-  const record = body && typeof body === "object" ? (body as Record<string, unknown>) : null;
-  const requestedDeck = record?.deckId;
+  const body = await readJsonObject(request);
+  const requestedDeck = body?.deckId;
 
   if (requestedDeck !== undefined && !isDeckId(requestedDeck)) {
     return errorJson(400, "INVALID_DECK", "Choose one of the available decks.");

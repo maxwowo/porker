@@ -1,5 +1,5 @@
+import { errorJson, json } from "../../../shared/http";
 import type { Env } from "../../_lib/env";
-import { errorJson, json } from "../../_lib/http";
 import { readRoomCode, roomStub } from "../../_lib/room";
 
 export const onRequestGet: PagesFunction<Env, "code"> = async ({ params, env }) => {

@@ -2,18 +2,17 @@ import { cn } from "../lib/cn";
 
 export type ConnectionStatus = "connecting" | "open" | "reconnecting" | "closed";
 
-const labels: Record<ConnectionStatus, string> = {
-  connecting: "Connecting",
-  open: "Live",
-  reconnecting: "Reconnecting",
-  closed: "Offline",
-};
+interface StatusStyle {
+  label: string;
+  dot: string;
+  pulsing?: boolean;
+}
 
-const dots: Record<ConnectionStatus, string> = {
-  connecting: "bg-gold",
-  open: "bg-good",
-  reconnecting: "bg-gold",
-  closed: "bg-danger",
+const statuses: Record<ConnectionStatus, StatusStyle> = {
+  connecting: { label: "Connecting", dot: "bg-gold", pulsing: true },
+  open: { label: "Live", dot: "bg-good" },
+  reconnecting: { label: "Reconnecting", dot: "bg-gold", pulsing: true },
+  closed: { label: "Offline", dot: "bg-danger" },
 };
 
 export function StatusPill({
@@ -23,7 +22,7 @@ export function StatusPill({
   status: ConnectionStatus;
   className?: string;
 }) {
-  const active = status === "connecting" || status === "reconnecting";
+  const { label, dot, pulsing } = statuses[status];
 
   return (
     <span
@@ -33,8 +32,8 @@ export function StatusPill({
       )}
       aria-live="polite"
     >
-      <span className={cn("size-2 rounded-full", dots[status], active && "animate-pulse")} />
-      {labels[status]}
+      <span className={cn("size-2 rounded-full", dot, pulsing && "animate-pulse")} />
+      {label}
     </span>
   );
 }

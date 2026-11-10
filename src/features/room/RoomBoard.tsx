@@ -18,11 +18,11 @@ interface RoomBoardProps {
 export function RoomBoard({ snapshot, status, actions }: RoomBoardProps) {
   const connected = status === "open";
   const voting = snapshot.phase === "voting";
+  const total = snapshot.participants.length;
   const votedCount = snapshot.participants.filter((participant) => participant.hasVoted).length;
   const waiting = snapshot.participants.filter((participant) => !participant.hasVoted);
   const selfWaiting = waiting.some((participant) => participant.id === snapshot.self.id);
-  const progress =
-    snapshot.participants.length === 0 ? 0 : (votedCount / snapshot.participants.length) * 100;
+  const progress = total === 0 ? 0 : (votedCount / total) * 100;
 
   return (
     <div className="space-y-4">
@@ -40,8 +40,7 @@ export function RoomBoard({ snapshot, status, actions }: RoomBoardProps) {
             <span>{snapshot.deck.name}</span>
             <span aria-hidden="true">·</span>
             <span>
-              {snapshot.participants.length}{" "}
-              {snapshot.participants.length === 1 ? "person" : "people"}
+              {total} {total === 1 ? "person" : "people"}
             </span>
           </div>
           <span className="inline-flex items-center gap-1.5">
@@ -58,7 +57,7 @@ export function RoomBoard({ snapshot, status, actions }: RoomBoardProps) {
           {voting ? (
             <div className="mx-auto max-w-lg text-center">
               <p className="font-display text-2xl font-semibold tracking-[-0.03em] text-on-felt sm:text-[1.7rem]">
-                {votingHeadline(votedCount, snapshot.participants.length)}
+                {votingHeadline(votedCount, total)}
               </p>
               <p className="mt-1.5 text-sm text-on-felt/55">
                 {votingDetail(waiting, snapshot.self.id)}
@@ -68,7 +67,7 @@ export function RoomBoard({ snapshot, status, actions }: RoomBoardProps) {
                   className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10"
                   role="progressbar"
                   aria-valuemin={0}
-                  aria-valuemax={snapshot.participants.length}
+                  aria-valuemax={total}
                   aria-valuenow={votedCount}
                   aria-label="Cards in"
                 >
@@ -78,7 +77,7 @@ export function RoomBoard({ snapshot, status, actions }: RoomBoardProps) {
                   />
                 </span>
                 <span className="text-[0.68rem] font-semibold tabular-nums text-on-felt/60">
-                  {votedCount}/{snapshot.participants.length}
+                  {votedCount}/{total}
                 </span>
               </div>
             </div>

@@ -2,7 +2,11 @@ import { EyeOff, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { getDeck } from "../../../shared/decks";
-import { normalizeDisplayName } from "../../../shared/validation";
+import {
+  MAX_NAME_LENGTH,
+  NAME_REQUIREMENT,
+  normalizeDisplayName,
+} from "../../../shared/validation";
 import type { RoomInfo } from "../../../shared/protocol";
 import { Button } from "../../components/Button";
 import { Input } from "../../components/Input";
@@ -26,7 +30,7 @@ export function JoinGate({ code, info, onJoin }: JoinGateProps) {
     const normalized = normalizeDisplayName(name);
 
     if (!normalized) {
-      setError("Pick a name between 1 and 32 characters.");
+      setError(NAME_REQUIREMENT);
       return;
     }
 
@@ -93,7 +97,7 @@ export function JoinGate({ code, info, onJoin }: JoinGateProps) {
             }}
             placeholder="e.g. Sam"
             autoComplete="nickname"
-            maxLength={32}
+            maxLength={MAX_NAME_LENGTH}
             autoFocus
             required
             aria-invalid={Boolean(error)}

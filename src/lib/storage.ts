@@ -15,30 +15,42 @@ const memoryStore: KeyValueStore = {
   },
 };
 
-let activeStore: KeyValueStore | null = null;
+let cachedStore: KeyValueStore | null = null;
 
-function store(): KeyValueStore {
-  if (activeStore) return activeStore;
+function getStore(): KeyValueStore {
+  if (cachedStore) return cachedStore;
 
-  for (const getStore of [() => window.localStorage, () => window.sessionStorage]) {
+  cachedStore = browserStore() ?? memoryStore;
+  return cachedStore;
+}
+
+function browserStore(): KeyValueStore | null {
+  for (const candidate of [() => window.localStorage, () => window.sessionStorage]) {
     try {
-      const candidate = getStore();
-      const probe = "__porker_probe__";
-      candidate.setItem(probe, "1");
-      candidate.removeItem(probe);
-      activeStore = candidate;
-      return candidate;
+      const store = candidate();
+      if (isWritable(store)) return store;
     } catch {
       continue;
     }
   }
 
-  activeStore = memoryStore;
-  return activeStore;
+  return null;
+}
+
+function isWritable(store: KeyValueStore): boolean {
+  const probe = "__porker_probe__";
+
+  try {
+    store.setItem(probe, "1");
+    store.removeItem(probe);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export function readJson<T>(key: string): T | null {
-  const raw = store().getItem(key);
+  const raw = getStore().getItem(key);
   if (!raw) return null;
 
   try {
@@ -49,17 +61,17 @@ export function readJson<T>(key: string): T | null {
 }
 
 export function writeJson(key: string, value: unknown): void {
-  try {
-    store().setItem(key, JSON.stringify(value));
-  } catch {
-    // Storage can be full or blocked; the app still works without persistence.
-  }
+  bestEffort(() => getStore().setItem(key, JSON.stringify(value)));
 }
 
 export function removeKey(key: string): void {
+  bestEffort(() => getStore().removeItem(key));
+}
+
+function bestEffort(action: () => void): void {
   try {
-    store().removeItem(key);
+    action();
   } catch {
-    // Ignore storage failures.
+    return;
   }
 }

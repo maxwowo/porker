@@ -1,4 +1,3 @@
-import { findCard } from "./decks";
 import type { Deck, DeckCard } from "./decks";
 
 export interface RoundResults {
@@ -16,36 +15,53 @@ export interface VoteBucket {
 }
 
 export function computeResults(deck: Deck, votes: string[]): RoundResults {
-  const knownVotes = votes.filter((vote) => findCard(deck, vote) !== undefined);
-  const numericVotes = knownVotes
-    .map((vote) => findCard(deck, vote)?.numeric)
-    .filter((value): value is number => value !== undefined);
+  const cards = knownCards(deck, votes);
+  const numericVotes = cards.flatMap((card) => (card.numeric === undefined ? [] : [card.numeric]));
 
   return {
-    voteCount: knownVotes.length,
+    voteCount: cards.length,
     numericVoteCount: numericVotes.length,
     average: numericVotes.length > 0 ? average(numericVotes) : null,
     median: numericVotes.length > 0 ? median(numericVotes) : null,
-    consensusValue:
-      knownVotes.length > 0 && knownVotes.every((vote) => vote === knownVotes[0])
-        ? knownVotes[0]
-        : null,
+    consensusValue: consensusValue(cards),
   };
 }
 
 export function voteDistribution(deck: Deck, votes: string[]): VoteBucket[] {
-  const counts = new Map<string, number>();
-  for (const vote of votes) {
-    if (findCard(deck, vote)) counts.set(vote, (counts.get(vote) ?? 0) + 1);
-  }
+  const cards = knownCards(deck, votes);
+  const counts = countByValue(cards);
 
-  const total = votes.length;
   return deck.cards
     .filter((card) => counts.has(card.value))
     .map((card) => {
       const count = counts.get(card.value) ?? 0;
-      return { card, count, percentage: total > 0 ? (count / total) * 100 : 0 };
+      return {
+        card,
+        count,
+        percentage: cards.length > 0 ? (count / cards.length) * 100 : 0,
+      };
     });
+}
+
+function knownCards(deck: Deck, votes: string[]): DeckCard[] {
+  const cardsByValue = new Map(deck.cards.map((card) => [card.value, card]));
+  return votes.flatMap((vote) => {
+    const card = cardsByValue.get(vote);
+    return card ? [card] : [];
+  });
+}
+
+function consensusValue(cards: DeckCard[]): string | null {
+  const [first, ...rest] = cards;
+  return first && rest.every((card) => card.value === first.value) ? first.value : null;
+}
+
+function countByValue(cards: DeckCard[]): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const card of cards) {
+    counts.set(card.value, (counts.get(card.value) ?? 0) + 1);
+  }
+  return counts;
 }
 
 function average(values: number[]): number {

@@ -1,3 +1,5 @@
+# Internal worker bound to the `porkr` Pages project. Deployed by
+# .github/workflows/deploy-worker.yml when worker or shared code changes.
 name = "porker-rooms"
 main = "src/index.ts"
 compatibility_date = "2026-11-01"

@@ -1,5 +1,6 @@
-import { Eye, EyeOff, RotateCcw } from "lucide-react";
-import type { RoomSnapshot } from "../../../shared/protocol";
+import { Check, Eye, EyeOff, RotateCcw } from "lucide-react";
+import { voteLabel } from "../../../shared/room";
+import type { PublicParticipant, RoomSnapshot } from "../../../shared/protocol";
 import { Button } from "../../components/Button";
 import type { ConnectionStatus } from "../../components/StatusPill";
 import { cn } from "../../lib/cn";
@@ -18,6 +19,10 @@ export function RoomBoard({ snapshot, status, actions }: RoomBoardProps) {
   const connected = status === "open";
   const voting = snapshot.phase === "voting";
   const votedCount = snapshot.participants.filter((participant) => participant.hasVoted).length;
+  const waiting = snapshot.participants.filter((participant) => !participant.hasVoted);
+  const selfWaiting = waiting.some((participant) => participant.id === snapshot.self.id);
+  const progress =
+    snapshot.participants.length === 0 ? 0 : (votedCount / snapshot.participants.length) * 100;
 
   return (
     <div className="space-y-4">
@@ -53,15 +58,29 @@ export function RoomBoard({ snapshot, status, actions }: RoomBoardProps) {
           {voting ? (
             <div className="mx-auto max-w-lg text-center">
               <p className="font-display text-2xl font-semibold tracking-[-0.03em] text-on-felt sm:text-[1.7rem]">
-                {votedCount === 0
-                  ? "Who is feeling brave?"
-                  : `${votedCount} of ${snapshot.participants.length} cards are in`}
+                {votingHeadline(votedCount, snapshot.participants.length)}
               </p>
               <p className="mt-1.5 text-sm text-on-felt/55">
-                {votedCount === 0
-                  ? "Pick a card from the tray below to start the round."
-                  : "Votes stay secret until someone reveals the cards."}
+                {votingDetail(waiting, snapshot.self.id)}
               </p>
+              <div className="mx-auto mt-4 flex max-w-xs items-center gap-2.5">
+                <span
+                  className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/10"
+                  role="progressbar"
+                  aria-valuemin={0}
+                  aria-valuemax={snapshot.participants.length}
+                  aria-valuenow={votedCount}
+                  aria-label="Cards in"
+                >
+                  <span
+                    className="block h-full rounded-full bg-gradient-to-r from-pink to-gold transition-[width] duration-500 ease-out"
+                    style={{ width: `${progress}%` }}
+                  />
+                </span>
+                <span className="text-[0.68rem] font-semibold tabular-nums text-on-felt/60">
+                  {votedCount}/{snapshot.participants.length}
+                </span>
+              </div>
             </div>
           ) : (
             <ResultsBar snapshot={snapshot} />
@@ -72,10 +91,18 @@ export function RoomBoard({ snapshot, status, actions }: RoomBoardProps) {
       <section className="sticky bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-20 rounded-[1.5rem] border border-line bg-surface/95 p-3 shadow-[0_22px_55px_-30px_rgba(45,24,21,0.55)] backdrop-blur-xl sm:p-4">
         {voting ? (
           <>
-            <div className="mb-2 flex items-center justify-between gap-2 px-1">
-              <span className="text-xs font-medium text-ink-muted">Your vote</span>
-              <span className="text-[0.68rem] text-ink-muted/65">
-                Tap your card again to clear it
+            <div className="mb-2 flex min-h-5 flex-wrap items-center justify-between gap-x-2 gap-y-1 px-1">
+              <span className="flex min-w-0 items-center gap-2 text-xs font-medium text-ink-muted">
+                Your vote
+                {snapshot.self.vote && (
+                  <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-pink-soft px-2 py-0.5 text-[0.65rem] font-semibold text-pink-strong">
+                    <Check className="size-3" strokeWidth={3} />
+                    {voteLabel(snapshot.deck.id, snapshot.self.vote)}
+                  </span>
+                )}
+              </span>
+              <span className="shrink-0 text-[0.68rem] text-ink-muted/65">
+                {snapshot.self.vote ? "Tap it again to clear" : "Tap a card to pick"}
               </span>
             </div>
 
@@ -91,13 +118,10 @@ export function RoomBoard({ snapshot, status, actions }: RoomBoardProps) {
                 className={cn(
                   "text-center text-[0.7rem] text-ink-muted sm:text-left",
                   !connected && "text-gold",
+                  connected && selfWaiting && "text-pink-strong",
                 )}
               >
-                {!connected
-                  ? "Reconnecting to the table…"
-                  : votedCount === 0
-                    ? "Pick a card to reveal"
-                    : `${votedCount} ${votedCount === 1 ? "card" : "cards"} ready · everyone can reveal`}
+                {trayMessage(connected, votedCount, waiting.length, selfWaiting)}
               </p>
 
               <Button
@@ -148,4 +172,41 @@ export function RoomBoard({ snapshot, status, actions }: RoomBoardProps) {
       </section>
     </div>
   );
+}
+
+function votingHeadline(votedCount: number, total: number): string {
+  if (votedCount === 0) return "Who is feeling brave?";
+  if (votedCount === total) return "Everyone is in.";
+  return `${votedCount} of ${total} cards are in`;
+}
+
+function votingDetail(waiting: PublicParticipant[], selfId: string): string {
+  if (waiting.length === 0) {
+    return "The table is ready. Reveal whenever you are.";
+  }
+  if (waiting.length === 1 && waiting[0].id === selfId) {
+    return "Waiting on you. Pick a card from the tray below.";
+  }
+  return `Waiting on ${formatNames(waiting)}. Votes stay secret until the reveal.`;
+}
+
+function trayMessage(
+  connected: boolean,
+  votedCount: number,
+  waitingCount: number,
+  selfWaiting: boolean,
+): string {
+  if (!connected) return "Reconnecting to the table…";
+  if (waitingCount === 0) return "Everyone is in · reveal when ready";
+  if (selfWaiting) return "Your card is still open · pick one below";
+  return `${votedCount} ${votedCount === 1 ? "card" : "cards"} in · ${waitingCount} still deciding`;
+}
+
+function formatNames(participants: PublicParticipant[]): string {
+  const names = participants.map((participant) => participant.name);
+
+  if (names.length === 1) return names[0];
+  if (names.length === 2) return `${names[0]} and ${names[1]}`;
+  if (names.length === 3) return `${names[0]}, ${names[1]} and ${names[2]}`;
+  return `${names[0]}, ${names[1]} and ${names.length - 2} more`;
 }

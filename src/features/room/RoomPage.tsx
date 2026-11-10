@@ -192,7 +192,7 @@ function RoomSkeleton() {
         {[0, 1, 2, 3].map((item) => (
           <div key={item} className="w-20">
             <div className="mx-auto size-10 rounded-full bg-white/10" />
-            <div className="mx-auto mt-3 h-[4.35rem] w-[3.25rem] rounded-xl bg-white/10" />
+            <div className="mx-auto mt-3 h-[70px] w-[52px] rounded-xl bg-white/10" />
             <div className="mx-auto mt-2 h-3 w-14 rounded-full bg-white/10" />
           </div>
         ))}

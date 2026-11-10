@@ -1,3 +1,4 @@
+import { Check } from "lucide-react";
 import { voteLabel } from "../../../shared/room";
 import type { DeckId } from "../../../shared/decks";
 import type { PublicParticipant } from "../../../shared/protocol";
@@ -23,8 +24,12 @@ export function ParticipantTile({
   revealDelay,
 }: ParticipantTileProps) {
   const vote = isSelf ? (selfVote ?? participant.vote) : participant.vote;
-  const showFace = vote !== null && (revealed || isSelf);
-  const label = vote ? voteLabel(deckId, vote) : "";
+  const hasVote = participant.hasVoted;
+  const showFace = hasVote && (revealed || isSelf);
+  const label = vote === null ? "" : voteLabel(deckId, vote);
+  const status = participantStatus(participant, revealed);
+  const showPickedBadge = hasVote && !revealed;
+  const cardFace = showFace ? "front" : hasVote ? "back" : "empty";
 
   return (
     <div
@@ -45,26 +50,29 @@ export function ParticipantTile({
         />
       </div>
 
-      <div className="mt-2.5">
-        {vote === null ? (
-          <PlayingCard face="empty" size="sm" />
-        ) : (
-          <div className="h-[4.35rem] w-[3.25rem] [perspective:600px]">
-            <div
-              className={cn(
-                "relative h-full w-full transition-transform duration-500 ease-out [transform-style:preserve-3d]",
-                showFace && "[transform:rotateY(180deg)]",
-              )}
-              style={{ transitionDelay: `${revealDelay}ms` }}
-            >
-              <div className="absolute inset-0 [backface-visibility:hidden]">
-                <PlayingCard face="back" size="sm" />
-              </div>
-              <div className="absolute inset-0 [transform:rotateY(180deg)] [backface-visibility:hidden]">
-                <PlayingCard face="front" label={label} size="sm" />
-              </div>
-            </div>
-          </div>
+      <div className="relative mt-4">
+        <PlayingCard
+          face={cardFace}
+          label={showFace ? label : ""}
+          size="sm"
+          className={cn(
+            isSelf && !revealed && "ring-2 ring-pink/80 ring-offset-2 ring-offset-felt",
+            !isSelf && showPickedBadge && "ring-2 ring-gold/70 ring-offset-2 ring-offset-felt",
+            revealed && hasVote && "card-reveal",
+          )}
+          style={revealed && hasVote ? { animationDelay: `${revealDelay}ms` } : undefined}
+        />
+
+        {showPickedBadge && (
+          <span
+            aria-hidden="true"
+            className={cn(
+              "absolute -right-1.5 -top-1.5 grid size-5 place-items-center rounded-full shadow-[0_2px_7px_rgba(7,40,33,0.5)] ring-2 ring-felt",
+              isSelf ? "bg-pink text-on-pink" : "bg-gold text-felt-deep",
+            )}
+          >
+            <Check className="size-3" strokeWidth={3.5} />
+          </span>
         )}
       </div>
 
@@ -76,16 +84,38 @@ export function ParticipantTile({
           </span>
         )}
       </div>
-      <span className="mt-0.5 text-[0.65rem] text-on-felt/60">
-        {statusLabel(participant, revealed)}
+      <span
+        className={cn(
+          "mt-1 inline-flex items-center gap-1.5 text-[0.65rem] font-medium",
+          status.text,
+        )}
+      >
+        <span className={cn("size-1.5 rounded-full", status.dot)} />
+        {status.label}
       </span>
       {showFace && label && <span className="sr-only">Voted {label}</span>}
     </div>
   );
 }
 
-function statusLabel(participant: PublicParticipant, revealed: boolean): string {
-  if (!participant.connected) return "Away";
-  if (revealed) return participant.hasVoted ? "Revealed" : "No card";
-  return participant.hasVoted ? "Card in" : "Thinking";
+interface ParticipantStatus {
+  label: string;
+  dot: string;
+  text: string;
+}
+
+function participantStatus(participant: PublicParticipant, revealed: boolean): ParticipantStatus {
+  if (!participant.connected) {
+    return { label: "Away", dot: "bg-on-felt/25", text: "text-on-felt/40" };
+  }
+
+  if (revealed) {
+    return participant.hasVoted
+      ? { label: "Revealed", dot: "bg-good", text: "text-on-felt/65" }
+      : { label: "No card", dot: "bg-on-felt/25", text: "text-on-felt/45" };
+  }
+
+  return participant.hasVoted
+    ? { label: "Card in", dot: "bg-good", text: "text-on-felt/80" }
+    : { label: "Waiting", dot: "bg-gold", text: "text-on-felt/70" };
 }

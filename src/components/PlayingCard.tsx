@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { cn } from "../lib/cn";
 import { PigMark } from "./Logo";
 
@@ -9,12 +10,13 @@ interface PlayingCardProps {
   face?: CardFace;
   size?: CardSize;
   className?: string;
+  style?: CSSProperties;
 }
 
 const sizes: Record<CardSize, string> = {
-  sm: "h-[4.35rem] w-[3.25rem] rounded-[0.9rem] text-[1.6rem]",
-  md: "h-[5.4rem] w-[4rem] rounded-[1.05rem] text-[2rem]",
-  lg: "h-[6.1rem] w-[4.45rem] rounded-[1.15rem] text-[2.35rem]",
+  sm: "h-[70px] w-[52px] rounded-[14px] text-[1.6rem]",
+  md: "h-[86px] w-[64px] rounded-[17px] text-[2rem]",
+  lg: "h-[98px] w-[71px] rounded-[18px] text-[2.35rem]",
 };
 
 const markSizes: Record<CardSize, string> = {
@@ -23,24 +25,32 @@ const markSizes: Record<CardSize, string> = {
   lg: "size-3",
 };
 
+const backMarkSizes: Record<CardSize, string> = {
+  sm: "size-5",
+  md: "size-6",
+  lg: "size-7",
+};
+
 export function PlayingCard({
   label = "",
   face = "front",
   size = "md",
   className,
+  style,
 }: PlayingCardProps) {
   const compact = label.length <= 2;
 
   return (
     <div
       aria-hidden="true"
+      style={style}
       className={cn(
         "relative grid shrink-0 place-items-center overflow-hidden border",
         sizes[size],
         face === "front" &&
           "border-line bg-card text-card-ink shadow-[0_8px_18px_-12px_rgba(43,23,20,0.5),inset_0_0_0_1px_rgba(255,255,255,0.55)]",
         face === "back" && "card-back border-felt-deep/60 text-white/90",
-        face === "empty" && "border-dashed border-white/25 bg-white/5 text-on-felt/35",
+        face === "empty" && "border-dashed border-white/15 bg-white/[0.025] text-on-felt/25",
         className,
       )}
     >
@@ -65,7 +75,7 @@ export function PlayingCard({
         <>
           <span className="absolute inset-1.5 rounded-[inherit] border border-white/15" />
           <span className="absolute inset-0 card-back-pattern opacity-30" />
-          <PigMark className={cn("relative text-white/85", markSizes[size])} />
+          <PigMark className={cn("relative text-white/85", backMarkSizes[size])} />
         </>
       )}
 
